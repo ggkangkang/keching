@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Together Forever - Couple App',
-        short_name: 'Together',
-        description: 'Track your love story and special moments together',
+        name: 'Keching',
+        short_name: 'Keching',
+        description: 'Track your love story and special moments with Keching',
         theme_color: '#ff6b9d',
         background_color: '#fef5f8',
         display: 'standalone',

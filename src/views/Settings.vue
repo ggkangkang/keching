@@ -34,7 +34,7 @@
         </div>
 
         <div class="app-version">
-            Version 1.0.7 • Together Forever
+            Version 1.0.8 • Keching
         </div>
       </div>
     </div>

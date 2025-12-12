@@ -9,15 +9,15 @@
         
         <div class="nav-links">
           <router-link to="/" class="nav-link">
-            <span class="nav-icon">🏠</span>
+            <span class="nav-icon"><ph-house :size="24" /></span>
             <span>Home</span>
           </router-link>
           <router-link to="/events" class="nav-link">
-            <span class="nav-icon">📅</span>
+            <span class="nav-icon"><ph-calendar-heart :size="24" /></span>
             <span>Events</span>
           </router-link>
           <router-link to="/settings" class="nav-link">
-            <span class="nav-icon">⚙️</span>
+            <span class="nav-icon"><ph-gear :size="24" /></span>
             <span>Settings</span>
           </router-link>
         </div>
@@ -34,6 +34,7 @@
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuth } from './composables/useAuth';
+import { PhHouse, PhCalendarHeart, PhGear } from '@phosphor-icons/vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -55,8 +56,9 @@ const isLoginPage = computed(() => route.path === '/login');
   bottom: var(--spacing-lg);
   left: 50%;
   transform: translateX(-50%);
-  width: 90%;
-  max-width: 500px; /* Pill shape max width */
+  width: auto; /* Allow auto width based on content */
+  min-width: 250px;
+  max-width: 90%;
   z-index: 100;
   border-radius: var(--radius-full);
   padding: var(--spacing-xs);
@@ -71,9 +73,9 @@ const isLoginPage = computed(() => route.path === '/login');
 
 .nav-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Center links in the pill */
   align-items: center;
-  padding: 0 var(--spacing-sm);
+  padding: 0 var(--spacing-xs);
   height: 60px;
 }
 
@@ -84,9 +86,9 @@ const isLoginPage = computed(() => route.path === '/login');
   font-family: var(--font-display);
   font-size: 1.2rem;
   font-weight: 700;
+  display: none; /* Hide brand entirely on mobile */
 }
 
-/* Hide Brand Text on Mobile to save space for pill nav */
 .brand-text {
   display: none; 
 }
@@ -98,17 +100,16 @@ const isLoginPage = computed(() => route.path === '/login');
 
 .nav-links {
   display: flex;
-  gap: var(--spacing-xs);
-  width: 100%;
-  justify-content: space-around;
+  gap: var(--spacing-sm); /* Increased gap for better spacing */
+  align-items: center;
 }
 
 .nav-link {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* Icon and text side-by-side */
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-full);
   text-decoration: none;
   color: var(--text-secondary);
@@ -117,9 +118,15 @@ const isLoginPage = computed(() => route.path === '/login');
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.8rem;
-  width: 60px;
-  height: 60px;
+  width: auto; /* Allow width to grow */
+  height: 48px;
+  gap: var(--spacing-xs);
+}
+
+.nav-link span:last-child {
+  display: none; /* Hide label by default on mobile */
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -127,19 +134,28 @@ const isLoginPage = computed(() => route.path === '/login');
 }
 
 .nav-link.router-link-active {
-  color: var(--primary-accent);
-  background: transparent;
+  color: var(--text-on-accent);
+  background: var(--primary-accent);
+  box-shadow: 0 4px 12px rgba(242, 166, 121, 0.4);
+}
+
+.nav-link.router-link-active span:last-child {
+  display: block; /* Show label when active */
+  animation: fade-in 0.3s ease-out;
 }
 
 .nav-icon {
-  font-size: 1.4rem;
-  margin-bottom: 2px;
-  transition: var(--transition-normal);
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  transition: none; /* Remove transform transition */
 }
 
+/* Remove the icon transform on active state */
 .nav-link.router-link-active .nav-icon {
-  transform: translateY(-2px);
-  filter: drop-shadow(0 4px 8px rgba(242, 166, 121, 0.4));
+  transform: none;
+  filter: none;
+  color: var(--text-on-accent);
 }
 
 .logout-btn {
@@ -159,31 +175,43 @@ const isLoginPage = computed(() => route.path === '/login');
     width: 95%;
     max-width: 1200px;
     padding: var(--spacing-xs) var(--spacing-md);
+    min-width: unset;
   }
   
   .nav-container {
     padding: 0;
+    justify-content: space-between; /* Space out brand and links */
+  }
+
+  .nav-brand {
+    display: flex; /* Show brand on desktop */
   }
 
   .nav-links {
-    width: auto;
     gap: var(--spacing-sm);
     justify-content: flex-end;
   }
   
   .nav-link {
-    flex-direction: row;
-    width: auto;
     height: auto;
     padding: var(--spacing-xs) var(--spacing-md);
-    gap: var(--spacing-xs);
+    background: transparent !important; /* Reset background for desktop */
+    box-shadow: none !important;
+    color: var(--text-secondary);
+  }
+
+  .nav-link span:last-child {
+    display: block; /* Always show label on desktop */
   }
   
-  .nav-icon {
-    margin-bottom: 0;
-    font-size: 1.2rem;
+  .nav-link.router-link-active {
+    color: var(--primary-accent);
   }
   
+  .nav-link.router-link-active .nav-icon {
+    color: var(--primary-accent);
+  }
+
   .brand-text {
     display: block;
     background: var(--gradient-warm);

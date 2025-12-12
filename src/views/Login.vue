@@ -134,6 +134,7 @@ const handleGoogleLogin = async () => {
   align-items: center;
   justify-content: center;
   padding: var(--spacing-md);
+  background: var(--app-background);
 }
 
 .login-container {
@@ -143,11 +144,12 @@ const handleGoogleLogin = async () => {
 
 .login-card {
   padding: var(--spacing-2xl);
-  background: rgba(30, 30, 36, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--glass-background);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-soft);
 }
 
 .logo-section {
@@ -159,11 +161,18 @@ const handleGoogleLogin = async () => {
   font-size: 4rem;
   margin-bottom: var(--spacing-md);
   display: inline-block;
-  filter: drop-shadow(0 0 20px rgba(255, 0, 85, 0.4));
+  filter: drop-shadow(0 4px 12px rgba(242, 166, 121, 0.4));
+}
+
+.logo-section h1 {
+  background: var(--gradient-warm);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .subtitle {
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   font-size: 1.1rem;
   margin-top: var(--spacing-xs);
 }
@@ -181,11 +190,21 @@ const handleGoogleLogin = async () => {
 
 .error-message {
   padding: var(--spacing-sm);
-  background: rgba(255, 0, 64, 0.15);
-  border: 1px solid rgba(255, 0, 64, 0.4);
+  background: rgba(255, 0, 64, 0.1);
+  border: 1px solid rgba(255, 0, 64, 0.2);
   border-radius: var(--radius-sm);
-  color: #ff4d6d;
+  color: #d63031;
   font-size: 0.9rem;
+}
+
+.input {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+}
+
+.input::placeholder {
+  color: var(--text-secondary);
 }
 
 .divider {
@@ -201,7 +220,7 @@ const handleGoogleLogin = async () => {
   top: 50%;
   width: 45%;
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-border);
 }
 
 .divider::before {
@@ -215,7 +234,7 @@ const handleGoogleLogin = async () => {
 .divider span {
   background: transparent;
   padding: 0 var(--spacing-sm);
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -227,7 +246,7 @@ const handleGoogleLogin = async () => {
 .link-button {
   background: none;
   border: none;
-  color: var(--color-primary);
+  color: var(--primary-accent);
   cursor: pointer;
   font-size: 0.95rem;
   text-decoration: underline;
@@ -235,7 +254,7 @@ const handleGoogleLogin = async () => {
 }
 
 .link-button:hover {
-  color: white;
+  color: var(--primary-accent-dark);
 }
 
 .btn svg {

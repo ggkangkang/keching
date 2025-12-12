@@ -162,6 +162,9 @@ export function useCoupleData() {
     const addEvent = async (coupleId, eventData) => {
         try {
             loading.value = true;
+            console.log('🔵 Adding event with coupleId:', coupleId);
+            console.log('🔵 Event data:', eventData);
+
             const eventsRef = collection(db, 'events');
 
             const eventDoc = {
@@ -173,7 +176,10 @@ export function useCoupleData() {
                 createdAt: Timestamp.now()
             };
 
+            console.log('🔵 Event document to save:', eventDoc);
             const docRef = await addDoc(eventsRef, eventDoc);
+            console.log('✅ Event saved successfully with ID:', docRef.id);
+
             const newEvent = { id: docRef.id, ...eventDoc };
             events.value.push(newEvent);
 
@@ -182,7 +188,9 @@ export function useCoupleData() {
 
             return newEvent;
         } catch (error) {
-            console.error('Error adding event:', error);
+            console.error('❌ Error adding event:', error);
+            console.error('❌ Error code:', error.code);
+            console.error('❌ Error message:', error.message);
             throw error;
         } finally {
             loading.value = false;
@@ -231,6 +239,8 @@ export function useCoupleData() {
 
     // Real-time sync for events
     const subscribeToEvents = (coupleId, callback) => {
+        console.log('🔵 Setting up real-time listener for coupleId:', coupleId);
+
         const eventsRef = collection(db, 'events');
         const q = query(
             eventsRef,
@@ -239,13 +249,23 @@ export function useCoupleData() {
         );
 
         return onSnapshot(q, (snapshot) => {
+            console.log('🔵 Events snapshot received, count:', snapshot.docs.length);
+
             events.value = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
+
+            console.log('✅ Events loaded:', events.value.length, 'events');
+            events.value.forEach(event => {
+                console.log('  - Event:', event.title, 'Date:', event.date.toDate());
+            });
+
             if (callback) callback(events.value);
         }, (error) => {
-            console.error('Error in events subscription:', error);
+            console.error('❌ Error in events subscription:', error);
+            console.error('❌ Error code:', error.code);
+            console.error('❌ Error message:', error.message);
         });
     };
 

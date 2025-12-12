@@ -2,7 +2,10 @@
   <div class="events-page">
     <div class="events-container container">
       <div class="page-header">
-        <h1>Our Special Moments 🎉</h1>
+        <div class="header-content">
+          <h1>Our Special Moments 🎉</h1>
+          <span v-if="coupleData?.userId2" class="sync-badge">🔄 Live Sync</span>
+        </div>
         <button @click="showAddModal = true" class="btn btn-primary">
           + Add Event
         </button>
@@ -121,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAuth } from '../composables/useAuth';
 import { useCoupleData } from '../composables/useCoupleData';
 
@@ -133,7 +136,8 @@ const {
   getCoupleData,
   getEvents,
   addEvent,
-  deleteEvent
+  deleteEvent,
+  subscribeToEvents
 } = useCoupleData();
 
 const showAddModal = ref(false);
@@ -144,13 +148,21 @@ const newEvent = ref({
   description: ''
 });
 
+let unsubscribeEvents = null;
+
 onMounted(async () => {
   if (user.value) {
     await getCoupleData(user.value.uid);
     if (coupleData.value) {
-      await getEvents(coupleData.value.id);
+      // Set up real-time sync for events
+      unsubscribeEvents = subscribeToEvents(coupleData.value.id);
     }
   }
+});
+
+onUnmounted(() => {
+  // Clean up subscription
+  if (unsubscribeEvents) unsubscribeEvents();
 });
 
 const sortedEvents = computed(() => {
@@ -250,9 +262,29 @@ const handleDeleteEvent = async (eventId) => {
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
 .page-header h1 {
   color: white;
   -webkit-text-fill-color: white;
+}
+
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .loading-state {

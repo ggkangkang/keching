@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Couples collection
+    match /couples/{coupleId} {
+      // Allow read if user is either partner
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.userId1 || 
+         request.auth.uid == resource.data.userId2);
+      
+      // Allow create if authenticated
+      allow create: if request.auth != null;
+      
+      // Allow update if user is either partner
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.userId1 || 
+         request.auth.uid == resource.data.userId2);
+      
+      // Allow delete only by creator (userId1)
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId1;
+    }
+    
+    // Invitations collection
+    match /invitations/{invitationId} {
+      // Allow read if user is sender, recipient by email, or recipient by UID
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.fromUserId || 
+         request.auth.email == resource.data.toEmail ||
+         request.auth.uid == resource.data.toUserId);
+      
+      // Allow create if authenticated
+      allow create: if request.auth != null;
+      
+      // Allow update if user is sender or recipient
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.fromUserId || 
+         request.auth.email == resource.data.toEmail);
+      
+      // Allow delete only by sender
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.fromUserId;
+    }
+    
+    // Events collection - THIS IS THE KEY FIX
+    match /events/{eventId} {
+      // Allow read if user is part of the couple
+      allow read: if request.auth != null && 
+        exists(/databases/$(database)/documents/couples/$(resource.data.coupleId)) &&
+        (get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.userId1 == request.auth.uid ||
+         get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.userId2 == request.auth.uid);
+      
+      // Allow create if user is part of a couple
+      allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)) &&
+        (get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.userId1 == request.auth.uid ||
+         get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.userId2 == request.auth.uid);
+      
+      // Allow update if user is part of the couple
+      allow update: if request.auth != null &&
+        exists(/databases/$(database)/documents/couples/$(resource.data.coupleId)) &&
+        (get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.userId1 == request.auth.uid ||
+         get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.userId2 == request.auth.uid);
+      
+      // Allow delete if user is part of the couple
+      allow delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/couples/$(resource.data.coupleId)) &&
+        (get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.userId1 == request.auth.uid ||
+         get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.userId2 == request.auth.uid);
+    }
+  }
+}

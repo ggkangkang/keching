@@ -568,14 +568,30 @@ const handleCancelInvitation = async () => {
 /* Responsive */
 @media (max-width: 768px) {
   .profiles-container {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-xl);
+    /* Side-by-side avatars with heart in middle on mobile */
+    grid-template-columns: 1fr auto 1fr;
+    gap: var(--spacing-sm); /* Tighten gap for mobile */
   }
   
   .heart-container {
-    order: -1;
-    margin-bottom: -20px;
+    order: 0; /* Keeps heart in the middle (DOM order: partner1, heart, partner2) */
+    margin-bottom: 0;
     z-index: 1;
+    transform: scale(0.8); /* Slightly smaller heart on mobile */
+  }
+  
+  /* Stack names under avatars cleanly */
+  .profile-card {
+    gap: var(--spacing-xs);
+  }
+
+  .profile-card h3 {
+    font-size: 1rem;
+    text-align: center;
+    max-width: 100px; /* Prevent long names from breaking layout */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .days-number {
@@ -587,8 +603,16 @@ const handleCancelInvitation = async () => {
   }
   
   .profile-picture-wrapper {
-    width: 120px;
-    height: 120px;
+    /* Responsive resizing */
+    width: 80px; 
+    height: 80px;
+  }
+}
+/* Small phones support */
+@media (max-width: 380px) {
+  .profile-picture-wrapper {
+    width: 60px;
+    height: 60px;
   }
 }
 </style>

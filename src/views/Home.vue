@@ -118,34 +118,52 @@
 
 
 
-        <!-- Days Counter -->
-        <div class="days-counter">
+        <!-- Main Counter Card -->
+        <div class="main-counter-card">
+          <button class="swap-btn" @click="toggleDisplayMode" title="Switch View">
+            <ph-arrows-clockwise :size="24" weight="bold" />
+          </button>
+          
           <div class="counter-content">
-            <div class="days-number text-gradient">{{ daysTogetherCount }}</div>
-            <div class="days-label">Days Together</div>
+            <div class="counter-number text-gradient" :key="displayMode">
+              {{ displayValue }}
+            </div>
+            <div class="counter-label">{{ displayLabel }}</div>
             <div class="date-info">
               Since {{ formatDate(coupleData.firstDayTogether) }}
             </div>
           </div>
         </div>
 
-        <!-- Quick Stats -->
-        <div class="stats-grid">
-          <div class="stat-card card">
-            <div class="stat-icon">📅</div>
-            <div class="stat-value">{{ yearsMonths.years }}</div>
-            <div class="stat-label">Years</div>
+        <!-- Next Special Moment -->
+        <div v-if="nearestEvent" class="next-event-card card" @click="$router.push('/events')">
+          <div class="next-event-header">
+            <span class="next-label">Up Next</span>
+            <span class="next-countdown">{{ getCountdown(nearestEvent.date) }}</span>
           </div>
-          <div class="stat-card card">
-            <div class="stat-icon">🌙</div>
-            <div class="stat-value">{{ yearsMonths.months }}</div>
-            <div class="stat-label">Months</div>
+          <div class="next-event-content">
+            <div class="next-event-icon">
+              {{ nearestEvent.type === 'birthday' ? '🎂' : 
+                 nearestEvent.type === 'anniversary' ? '💕' : 
+                 nearestEvent.type === 'holiday' ? '🎄' : '⭐' }}
+            </div>
+            <div class="next-event-details">
+              <h3>{{ nearestEvent.title }}</h3>
+              <p>{{ formatDate(nearestEvent.date) }}</p>
+            </div>
+            <div class="chevron">›</div>
           </div>
-          <div class="stat-card card">
-            <div class="stat-icon">⏰</div>
-            <div class="stat-value">{{ totalHours }}</div>
-            <div class="stat-label">Hours</div>
-          </div>
+        </div>
+        
+        <div v-else class="next-event-card card empty-state" @click="$router.push('/events')">
+           <div class="next-event-content">
+            <div class="next-event-icon">📅</div>
+             <div class="next-event-details">
+              <h3>No Upcoming Events</h3>
+              <p>Add a special moment!</p>
+            </div>
+            <div class="chevron">›</div>
+           </div>
         </div>
       </div>
     </div>
@@ -193,10 +211,12 @@ import { useCoupleData } from '../composables/useCoupleData';
 import { useInvitations } from '../composables/useInvitations';
 import InvitePartner from '../components/InvitePartner.vue';
 import { getZodiacSign } from '../utils/zodiac';
+import { PhArrowsClockwise } from '@phosphor-icons/vue';
 
 const { user } = useAuth();
 const { 
   coupleData, 
+  events,
   loading, 
   daysTogetherCount,
   getCoupleData,
@@ -273,9 +293,75 @@ const yearsMonths = computed(() => {
   return { years, months };
 });
 
-const totalHours = computed(() => {
-  return (daysTogetherCount.value * 24).toLocaleString();
+const displayMode = ref('days'); // 'days', 'months', 'years', 'hours'
+
+const toggleDisplayMode = () => {
+  const modes = ['days', 'months', 'years', 'hours'];
+  const currentIndex = modes.indexOf(displayMode.value);
+  displayMode.value = modes[(currentIndex + 1) % modes.length];
+};
+
+const displayValue = computed(() => {
+  if (!coupleData.value?.firstDayTogether) return 0;
+  
+  switch (displayMode.value) {
+    case 'days':
+      return daysTogetherCount.value;
+    case 'months':
+      return yearsMonths.value.years * 12 + yearsMonths.value.months;
+    case 'years':
+      return yearsMonths.value.years;
+    case 'hours':
+      return totalHours.value;
+    default:
+      return daysTogetherCount.value;
+  }
 });
+
+const displayLabel = computed(() => {
+  switch (displayMode.value) {
+    case 'days': return 'Days Together';
+    case 'months': return 'Months Together';
+    case 'years': return 'Years Together';
+    case 'hours': return 'Hours Together';
+    default: return 'Days Together';
+  }
+});
+
+const nearestEvent = computed(() => {
+  if (!events.value || events.value.length === 0) return null;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Filter for future events (including today)
+  const upcoming = events.value.filter(e => {
+    const d = e.date.toDate();
+    d.setHours(0, 0, 0, 0);
+    return d >= today;
+  });
+  
+  if (upcoming.length === 0) return null;
+  
+  // Sort by date ascending
+  return upcoming.sort((a, b) => a.date.toMillis() - b.date.toMillis())[0];
+});
+
+const getCountdown = (timestamp) => {
+  if (!timestamp) return '';
+  const eventDate = timestamp.toDate();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  eventDate.setHours(0, 0, 0, 0);
+  
+  const diffTime = eventDate - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Today! 🎉';
+  if (diffDays === 1) return 'Tomorrow';
+  return `In ${diffDays} days`;
+};
+
 
 const handlePhotoUpload = async (event, field) => {
   const file = event.target.files[0];
@@ -464,8 +550,8 @@ const handleSaveProfile = async () => {
   background-clip: text;
 }
 
-/* Days Counter */
-.days-counter {
+/* Main Counter Card */
+.main-counter-card {
   padding: var(--spacing-xl);
   text-align: center;
   background: var(--glass-background);
@@ -476,9 +562,10 @@ const handleSaveProfile = async () => {
   box-shadow: var(--shadow-soft);
   position: relative;
   overflow: hidden;
+  transition: all var(--transition-normal);
 }
 
-.days-counter::before {
+.main-counter-card::before {
   content: '';
   position: absolute;
   top: -50%;
@@ -490,16 +577,31 @@ const handleSaveProfile = async () => {
   pointer-events: none;
 }
 
-.counter-content {
-  position: relative;
-  z-index: 1;
+.swap-btn {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--spacing-xs);
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all var(--transition-normal);
+  z-index: 2;
 }
 
-.days-number {
+.swap-btn:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--primary-accent);
+  transform: rotate(180deg);
+}
+
+.counter-number {
   font-size: 4.5rem;
   font-weight: 800;
   font-family: var(--font-display);
@@ -509,14 +611,16 @@ const handleSaveProfile = async () => {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   filter: drop-shadow(0 4px 12px rgba(242, 166, 121, 0.3));
+  transition: opacity 0.3s ease;
 }
 
-.days-label {
+.counter-label {
   font-size: 1.2rem;
   font-weight: 500;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  margin-top: var(--spacing-xs);
 }
 
 .date-info {
@@ -526,57 +630,88 @@ const handleSaveProfile = async () => {
   opacity: 0.8;
 }
 
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-md);
-}
-
-.stat-card {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-xs);
+/* Next Event Card */
+.next-event-card {
   background: var(--glass-background);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
-  backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-normal);
+  padding: var(--spacing-md) var(--spacing-lg);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
-.stat-card:hover {
-  transform: translateY(-5px);
-  border-color: var(--primary-accent);
-  box-shadow: 0 10px 25px rgba(242, 166, 121, 0.2);
+.next-event-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.6);
 }
 
-.stat-icon {
-  font-size: 2rem;
-  margin-bottom: var(--spacing-xs);
-  filter: grayscale(0.2);
-  transition: filter var(--transition-normal);
-}
-
-.stat-card:hover .stat-icon {
-  filter: grayscale(0) drop-shadow(0 4px 8px rgba(242, 166, 121, 0.3));
-}
-
-.stat-value {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.stat-label {
+.next-event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 0.85rem;
-  color: var(--text-secondary);
-  font-weight: 500;
+}
+
+.next-label {
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.next-countdown {
+  background: var(--primary-accent);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.next-event-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.next-event-icon {
+  font-size: 1.8rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+}
+
+.next-event-details {
+  flex: 1;
+}
+
+.next-event-details h3 {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.next-event-details p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.chevron {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.empty-state {
+  opacity: 0.8;
 }
 
 /* Invite Section */

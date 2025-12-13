@@ -6,6 +6,72 @@
       </div>
 
       <div class="settings-content fade-in">
+        <!-- Profile Photos Section -->
+        <div class="settings-section card-glass">
+          <h2>Profile Photos</h2>
+          <p class="section-description">Upload photos for both partners</p>
+          
+          <div class="photo-grid">
+            <!-- Partner 1 Photo -->
+            <div class="photo-item">
+              <label class="photo-label">{{ coupleData?.partner1Name || 'Partner 1' }}</label>
+              <div class="photo-wrapper">
+                <img 
+                  :src="coupleData?.partner1Photo || '/images/boy_avatar.png'" 
+                  :alt="coupleData?.partner1Name || 'Partner 1'"
+                  class="profile-photo"
+                />
+                <div class="photo-overlay">
+                  <label for="partner1-upload" class="upload-label">
+                    <span class="upload-icon">📷</span>
+                    <span>Change</span>
+                  </label>
+                </div>
+              </div>
+              <input
+                id="partner1-upload"
+                type="file"
+                accept="image/*"
+                @change="handlePhotoUpload($event, 'partner1')"
+                class="file-input"
+              />
+              <div v-if="uploadingPartner1" class="upload-progress">
+                <div class="spinner small"></div>
+                <span>Uploading...</span>
+              </div>
+            </div>
+
+            <!-- Partner 2 Photo -->
+            <div class="photo-item">
+              <label class="photo-label">{{ coupleData?.partner2Name || 'Partner 2' }}</label>
+              <div class="photo-wrapper">
+                <img 
+                  :src="coupleData?.partner2Photo || '/images/girl_avatar.png'" 
+                  :alt="coupleData?.partner2Name || 'Partner 2'"
+                  class="profile-photo"
+                />
+                <div class="photo-overlay">
+                  <label for="partner2-upload" class="upload-label">
+                    <span class="upload-icon">📷</span>
+                    <span>Change</span>
+                  </label>
+                </div>
+              </div>
+              <input
+                id="partner2-upload"
+                type="file"
+                accept="image/*"
+                @change="handlePhotoUpload($event, 'partner2')"
+                class="file-input"
+              />
+              <div v-if="uploadingPartner2" class="upload-progress">
+                <div class="spinner small"></div>
+                <span>Uploading...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Account Section -->
         <div class="settings-section card-glass">
           <h2>Account</h2>
@@ -34,7 +100,7 @@
         </div>
 
         <div class="app-version">
-            Version 1.0.9 • Keching
+            Version 1.2.0 • Keching
         </div>
       </div>
     </div>
@@ -42,12 +108,114 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
-import { PhGear } from '@phosphor-icons/vue';
+import { useCoupleData } from '../composables/useCoupleData';
 
 const router = useRouter();
 const { user, logout } = useAuth();
+const { coupleData, getCoupleData, uploadProfilePicture, updateCoupleProfile } = useCoupleData();
+
+const uploadingPartner1 = ref(false);
+const uploadingPartner2 = ref(false);
+
+// Load couple data on mount
+onMounted(async () => {
+  if (user.value) {
+    await getCoupleData(user.value.uid);
+  }
+});
+
+const handlePhotoUpload = async (event, partner) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  // Check if user is logged in
+  if (!user.value || !user.value.uid) {
+    alert('You must be logged in to upload photos');
+    return;
+  }
+
+  // Check if couple data is loaded
+  if (!coupleData.value) {
+    alert('Please set up your couple profile first before uploading photos');
+    return;
+  }
+
+  // Validate file size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File size must be less than 5MB');
+    return;
+  }
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file');
+    return;
+  }
+
+  try {
+    if (partner === 'partner1') {
+      uploadingPartner1.value = true;
+    } else {
+      uploadingPartner2.value = true;
+    }
+
+    // Upload to Firebase Storage
+    console.log('=== UPLOAD DEBUG INFO ===');
+    console.log('Partner:', partner);
+    console.log('User object:', user.value);
+    console.log('User UID:', user.value?.uid);
+    console.log('Couple Data:', coupleData.value);
+    console.log('File:', file.name, file.size, file.type);
+    console.log('Starting upload for user:', user.value.uid);
+    
+    const photoURL = await uploadProfilePicture(file, user.value.uid);
+    console.log('Upload successful, URL:', photoURL);
+
+    // Update Firestore with the new photo URL
+    if (coupleData.value) {
+      const updateData = partner === 'partner1' 
+        ? { partner1Photo: photoURL }
+        : { partner2Photo: photoURL };
+      
+      console.log('Updating Firestore with:', updateData);
+      await updateCoupleProfile(coupleData.value.id, updateData);
+      console.log('Firestore updated successfully');
+    } else {
+      console.warn('No couple data found, cannot update Firestore');
+      alert('Photo uploaded to storage, but no couple profile found to update.');
+    }
+
+    // Clear the file input
+    event.target.value = '';
+  } catch (error) {
+    console.error('Error uploading photo:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    
+    // Show more specific error messages
+    let errorMessage = 'Failed to upload photo. ';
+    if (error.code === 'storage/unauthorized') {
+      errorMessage += 'Permission denied. Please check Firebase Storage rules.';
+    } else if (error.code === 'storage/canceled') {
+      errorMessage += 'Upload was cancelled.';
+    } else if (error.code === 'storage/unknown') {
+      errorMessage += 'Unknown error occurred. Check console for details.';
+    } else {
+      errorMessage += error.message || 'Please try again.';
+    }
+    
+    alert(errorMessage);
+  } finally {
+    if (partner === 'partner1') {
+      uploadingPartner1.value = false;
+    } else {
+      uploadingPartner2.value = false;
+    }
+  }
+};
 
 const handleLogout = async () => {
   try {
@@ -113,6 +281,105 @@ const handleLogout = async () => {
   flex-direction: column;
   gap: var(--spacing-sm);
 }
+
+/* Profile Photos Styles */
+.section-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.photo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.photo-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.photo-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--primary-accent);
+  box-shadow: 0 4px 12px rgba(242, 166, 121, 0.3);
+  transition: all var(--transition-fast);
+}
+
+.photo-wrapper:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(242, 166, 121, 0.4);
+}
+
+.profile-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  cursor: pointer;
+}
+
+.photo-wrapper:hover .photo-overlay {
+  opacity: 1;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.upload-icon {
+  font-size: 1.5rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--primary-accent);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.spinner.small {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
 
 .info-row {
   display: flex;

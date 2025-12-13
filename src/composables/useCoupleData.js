@@ -14,10 +14,9 @@ import {
     Timestamp,
     onSnapshot
 } from 'firebase/firestore';
-// Firebase Storage is optional - uncomment if you enable it in Firebase Console
-// import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db } from '../firebase';
-// import { storage } from '../firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
+
 
 const coupleData = ref(null);
 const events = ref([]);
@@ -187,26 +186,35 @@ export function useCoupleData() {
         }
     };
 
-    // Upload profile picture (DISABLED - Enable Firebase Storage first)
-    const uploadProfilePicture = async (file, partnerId) => {
-        // Uncomment below when Firebase Storage is enabled
-        /*
+    // Upload profile picture
+    const uploadProfilePicture = async (file, userId) => {
         try {
             loading.value = true;
-            const fileRef = storageRef(storage, `profile-pictures/${Date.now()}_${file.name}`);
+            console.log('uploadProfilePicture called with:', { fileName: file.name, userId });
+
+            const storagePath = `profile-pictures/${userId}/${Date.now()}_${file.name}`;
+            console.log('Storage path:', storagePath);
+
+            const fileRef = storageRef(storage, storagePath);
+            console.log('Storage ref created:', fileRef);
+
             await uploadBytes(fileRef, file);
+            console.log('File uploaded successfully');
+
             const url = await getDownloadURL(fileRef);
+            console.log('Download URL obtained:', url);
+
             return url;
         } catch (error) {
-            console.error('Error uploading profile picture:', error);
+            console.error('Error in uploadProfilePicture:', error);
+            console.error('Error code:', error.code);
+            console.error('Error message:', error.message);
             throw error;
         } finally {
             loading.value = false;
         }
-        */
-        alert('Profile picture upload is disabled. Enable Firebase Storage to use this feature (it\'s free!)');
-        return '';
     };
+
 
     // Get events for couple
     const getEvents = async (coupleId) => {

@@ -37,7 +37,11 @@
                   alt="Partner 1"
                   class="profile-picture"
                 />
-                <label class="upload-button">
+                <!-- Upload Loading Overlay -->
+                <div v-if="uploadingPartner1" class="upload-loading-overlay">
+                  <div class="spinner"></div>
+                </div>
+                <label v-else class="upload-button">
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -78,7 +82,11 @@
                   alt="Partner 2"
                   class="profile-picture"
                 />
-                <label class="upload-button">
+                <!-- Upload Loading Overlay -->
+                <div v-if="uploadingPartner2" class="upload-loading-overlay">
+                  <div class="spinner"></div>
+                </div>
+                <label v-else class="upload-button">
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -236,6 +244,8 @@ const editForm = ref({
   birthday: ''
 });
 const pendingInvitation = ref(null);
+const uploadingPartner1 = ref(false);
+const uploadingPartner2 = ref(false);
 let unsubscribeCouple = null;
 let unsubscribeEvents = null;
 
@@ -367,12 +377,34 @@ const handlePhotoUpload = async (event, field) => {
   const file = event.target.files[0];
   if (!file) return;
   
+  // Check if user is logged in
+  if (!user.value || !user.value.uid) {
+    alert('You must be logged in to upload photos');
+    return;
+  }
+  
+  // Set loading state for the specific partner
+  if (field === 'partner1Photo') {
+    uploadingPartner1.value = true;
+  } else {
+    uploadingPartner2.value = true;
+  }
+  
   try {
-    const url = await uploadProfilePicture(file, field);
+    // Upload to storage using the actual user UID, NOT the field name
+    const url = await uploadProfilePicture(file, user.value.uid);
+    // Update Firestore with the field name
     await updateCoupleProfile(coupleData.value.id, { [field]: url });
   } catch (error) {
     console.error('Error uploading photo:', error);
-    alert('Failed to upload photo. Please try again.');
+    alert(`Failed to upload photo: ${error.message || 'Please try again.'}`);
+  } finally {
+    // Clear loading state
+    if (field === 'partner1Photo') {
+      uploadingPartner1.value = false;
+    } else {
+      uploadingPartner2.value = false;
+    }
   }
 };
 
@@ -527,6 +559,24 @@ const handleSaveProfile = async () => {
 .upload-button:hover {
   transform: scale(1.1);
   box-shadow: 0 6px 15px rgba(242, 166, 121, 0.6);
+}
+
+.upload-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.upload-loading-overlay .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
 }
 
 .profile-card h3 {

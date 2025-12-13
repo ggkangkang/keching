@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
+import { holidays, getNextHolidayDate } from '../utils/holidays';
 
 
 const coupleData = ref(null);
@@ -295,6 +296,66 @@ export function useCoupleData() {
         }
     };
 
+    // Create holiday events automatically
+    const createHolidayEvents = async (coupleId) => {
+        try {
+            console.log('🎉 Creating holiday events for couple:', coupleId);
+
+            // Get existing events to check for duplicates
+            const eventsRef = collection(db, 'events');
+            const q = query(
+                eventsRef,
+                where('coupleId', '==', coupleId),
+                where('type', '==', 'holiday')
+            );
+
+            const snapshot = await getDocs(q);
+            const existingHolidays = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            // Get existing holiday titles to prevent duplicates
+            const existingTitles = new Set(existingHolidays.map(h => h.title));
+
+            let createdCount = 0;
+
+            // Create events for each holiday
+            for (const holiday of holidays) {
+                // Check if this holiday already exists
+                if (existingTitles.has(holiday.name)) {
+                    console.log(`Holiday already exists: ${holiday.name}`);
+                    continue;
+                }
+
+                // Get next occurrence of this holiday
+                const holidayDate = getNextHolidayDate(holiday);
+
+                if (holidayDate) {
+                    const eventDoc = {
+                        coupleId,
+                        title: holiday.name,
+                        date: Timestamp.fromDate(holidayDate),
+                        type: 'holiday',
+                        description: `${holiday.emoji} ${holiday.name}`,
+                        createdAt: Timestamp.now()
+                    };
+
+                    await addDoc(eventsRef, eventDoc);
+                    createdCount++;
+                    console.log(`✅ Created holiday: ${holiday.name} on ${holidayDate.toDateString()}`);
+                }
+            }
+
+            console.log(`🎉 Created ${createdCount} holiday events`);
+            return createdCount;
+        } catch (error) {
+            console.error('Error creating holiday events:', error);
+            throw error;
+        }
+    };
+
+
     // Calculate days together
     const daysTogetherCount = computed(() => {
         if (!coupleData.value?.firstDayTogether) return 0;
@@ -365,6 +426,7 @@ export function useCoupleData() {
         getEvents,
         addEvent,
         deleteEvent,
+        createHolidayEvents,
         subscribeToCoupleData,
         subscribeToEvents
     };

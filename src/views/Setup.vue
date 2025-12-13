@@ -66,7 +66,7 @@ import { useCoupleData } from '../composables/useCoupleData';
 
 const router = useRouter();
 const { user } = useAuth();
-const { createCoupleProfile, loading } = useCoupleData();
+const { createCoupleProfile, createHolidayEvents, loading } = useCoupleData();
 
 const formData = ref({
   partner1Name: '',
@@ -76,7 +76,19 @@ const formData = ref({
 
 const handleSubmit = async () => {
   try {
-    await createCoupleProfile(user.value.uid, formData.value);
+    const newProfile = await createCoupleProfile(user.value.uid, formData.value);
+    
+    // Auto-create holiday events for new couple
+    if (newProfile?.id) {
+      try {
+        await createHolidayEvents(newProfile.id);
+        console.log('✅ Holiday events created for new couple');
+      } catch (error) {
+        console.error('Error creating holiday events:', error);
+        // Don't block profile creation if holiday creation fails
+      }
+    }
+    
     router.push('/');
   } catch (error) {
     console.error('Error creating profile:', error);

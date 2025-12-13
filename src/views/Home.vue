@@ -230,6 +230,7 @@ const {
   getCoupleData,
   uploadProfilePicture,
   updateCoupleProfile,
+  createHolidayEvents,
   subscribeToCoupleData,
   subscribeToEvents
 } = useCoupleData();
@@ -257,6 +258,13 @@ onMounted(async () => {
     if (coupleData.value?.id) {
       unsubscribeCouple = subscribeToCoupleData(coupleData.value.id);
       unsubscribeEvents = subscribeToEvents(coupleData.value.id);
+      
+      // Auto-create holiday events if they don't exist
+      try {
+        await createHolidayEvents(coupleData.value.id);
+      } catch (error) {
+        console.error('Error creating holiday events:', error);
+      }
       
       // Check for pending invitation
       const invitation = await getInvitationByCoupleId(coupleData.value.id);

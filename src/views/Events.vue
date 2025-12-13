@@ -35,7 +35,7 @@
           @touchend="cancelLongPress"
           @touchmove="cancelLongPress"
         >
-          <div class="event-icon">{{ getEventIcon(event.type) }}</div>
+          <div class="event-icon">{{ getEventIcon(event) }}</div>
           <div class="event-content">
             <h3>{{ event.title }}</h3>
             <p v-if="event.description" class="event-description">
@@ -72,6 +72,30 @@
                 <option value="holiday">Holiday</option>
                 <option value="custom">Custom</option>
               </select>
+            </div>
+
+            <div class="form-group">
+              <label>Emoji (Optional)</label>
+              <div class="emoji-picker">
+                <input
+                  v-model="newEvent.emoji"
+                  type="text"
+                  class="input emoji-input"
+                  placeholder="Choose an emoji... 🎉"
+                  maxlength="2"
+                />
+                <div class="emoji-suggestions">
+                  <button
+                    v-for="emoji in emojiSuggestions"
+                    :key="emoji"
+                    type="button"
+                    class="emoji-btn"
+                    @click="newEvent.emoji = emoji"
+                  >
+                    {{ emoji }}
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
@@ -157,8 +181,14 @@ const newEvent = ref({
   title: '',
   type: 'custom',
   date: '',
-  description: ''
+  description: '',
+  emoji: ''
 });
+
+const emojiSuggestions = [
+  '🎉', '💝', '🎂', '🎄', '🎃', '🌟', '💕', '🎁',
+  '🌹', '🎊', '🥳', '🎈', '💐', '🍰', '🎆', '✨'
+];
 
 let unsubscribeEvents = null;
 
@@ -183,14 +213,28 @@ const sortedEvents = computed(() => {
   });
 });
 
-const getEventIcon = (type) => {
+const getEventIcon = (event) => {
+  // Use custom emoji if provided
+  if (event.emoji) {
+    return event.emoji;
+  }
+  
+  // For holiday events, try to extract emoji from description
+  if (event.type === 'holiday' && event.description) {
+    const emojiMatch = event.description.match(/[\p{Emoji}]/u);
+    if (emojiMatch) {
+      return emojiMatch[0];
+    }
+  }
+  
+  // Fall back to type-based icons
   const icons = {
     anniversary: '💕',
     holiday: '🎄',
     birthday: '🎂',
     custom: '⭐'
   };
-  return icons[type] || '📅';
+  return icons[event.type] || '📅';
 };
 
 const formatEventDate = (timestamp) => {
@@ -233,7 +277,8 @@ const handleAddEvent = async () => {
       title: '',
       type: 'custom',
       date: '',
-      description: ''
+      description: '',
+      emoji: ''
     };
   } catch (error) {
     console.error('Error adding event:', error);
@@ -561,6 +606,43 @@ const confirmDeleteEvent = async () => {
   border-color: var(--primary-accent);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 0 0 3px rgba(242, 166, 121, 0.15);
+}
+
+/* Emoji Picker */
+.emoji-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.emoji-input {
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.emoji-suggestions {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: var(--spacing-xs);
+}
+
+.emoji-btn {
+  padding: var(--spacing-sm);
+  font-size: 1.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(1.1);
+  border-color: var(--primary-accent);
 }
 
 .modal-actions {

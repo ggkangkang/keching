@@ -338,6 +338,7 @@ export function useCoupleData() {
                         date: Timestamp.fromDate(holidayDate),
                         type: 'holiday',
                         description: `${holiday.emoji} ${holiday.name}`,
+                        emoji: holiday.emoji,
                         createdAt: Timestamp.now()
                     };
 

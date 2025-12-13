@@ -1,5 +1,8 @@
 <template>
   <div id="app">
+    <!-- Global Audio Player -->
+    <audio ref="audioRef" loop style="display: none;"></audio>
+
     <nav v-if="isAuthenticated && !isLoginPage" class="main-nav">
       <div class="nav-container container">
         <div class="nav-brand">
@@ -31,16 +34,51 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, watch, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuth } from './composables/useAuth';
+import { useCoupleData } from './composables/useCoupleData';
+import { useAudioPlayer } from './composables/useAudioPlayer';
 import { PhHouse, PhCalendarHeart, PhGear } from '@phosphor-icons/vue';
 
 const router = useRouter();
 const route = useRoute();
-const { isAuthenticated } = useAuth();
+const { isAuthenticated, user } = useAuth();
+const { coupleData, getCoupleData, subscribeToCoupleData } = useCoupleData();
+const { audioRef, setTrack } = useAudioPlayer();
 
 const isLoginPage = computed(() => route.path === '/login');
+
+let unsubscribeCouple = null;
+
+// Global Data & Music Management
+watch(() => user.value, async (newUser) => {
+  if (newUser) {
+    if (!coupleData.value) {
+      await getCoupleData(newUser.uid);
+    }
+    
+    if (coupleData.value?.id && !unsubscribeCouple) {
+      unsubscribeCouple = subscribeToCoupleData(coupleData.value.id);
+    }
+  } else {
+    if (unsubscribeCouple) {
+      unsubscribeCouple();
+      unsubscribeCouple = null;
+    }
+  }
+}, { immediate: true });
+
+// Sync BGM with Audio Player
+watch(() => coupleData.value?.bgmUrl, (newUrl) => {
+  if (newUrl) {
+    setTrack(newUrl);
+  }
+});
+
+onUnmounted(() => {
+  if (unsubscribeCouple) unsubscribeCouple();
+});
 </script>
 
 <style>

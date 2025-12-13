@@ -181,15 +181,68 @@
         </form>
       </div>
     </div>
+
+    <!-- Music Player -->
+    <VinylDisc 
+      :is-playing="isPlaying"
+      :current-title="coupleData?.bgmTitle"
+      @toggle="togglePlay"
+      @open-menu="showMusicModal = true"
+    />
+
+    <!-- Days Together Card with Swappable Units -->
+    <div class="days-card fade-in-up" @click="cycleUnit">
+      <div class="days-content">
+        <span class="days-count gradient-text">{{ currentUnitValue }}</span>
+        <span class="days-label">{{ currentUnitLabel }} together</span>
+      </div>
+      <div class="swap-hint">
+        <span class="swap-icon">↻</span>
+        Tap to swap unit
+      </div>
+    </div>
+
+    <!-- Next Holiday Card -->
+    <div v-if="nextHoliday" class="next-holiday-card fade-in-up delay-1">
+      <div class="holiday-icon">{{ nextHoliday.emoji }}</div>
+      <div class="holiday-info">
+        <span class="holiday-label">Up Next</span>
+        <span class="holiday-name">{{ nextHoliday.title }}</span>
+        <span class="holiday-date">{{ formatDate(nextHoliday.date) }}</span>
+      </div>
+    </div>
+
+    <!-- Invitation Card -->
+    <div v-if="!coupleData?.partner2Name" class="invite-card fade-in-up delay-2">
+      <h2>Invite Partner</h2>
+      <p>Share this code to link accounts:</p>
+      <div class="code-display" @click="copyCode">
+        {{ coupleData?.id }}
+        <span class="copy-icon">📋</span>
+      </div>
+    </div>
+
+
+
+    <!-- Music Selector Modal -->
+    <MusicSelector 
+      v-if="showMusicModal"
+      :current-bgm-url="coupleData?.bgmUrl"
+      @close="showMusicModal = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAuth } from '../composables/useAuth';
 import { useCoupleData } from '../composables/useCoupleData';
 import { useInvitations } from '../composables/useInvitations';
 import InvitePartner from '../components/InvitePartner.vue';
+import VinylDisc from '../components/VinylDisc.vue';
+import MusicSelector from '../components/MusicSelector.vue';
+import { useAudioPlayer } from '../composables/useAudioPlayer';
+import confetti from 'canvas-confetti';
 import { getZodiacSign } from '../utils/zodiac';
 import { PhArrowsClockwise } from '@phosphor-icons/vue';
 
@@ -208,6 +261,43 @@ const {
 } = useCoupleData();
 
 const { getInvitationByCoupleId, cancelInvitation } = useInvitations();
+const { togglePlay, isPlaying } = useAudioPlayer();
+
+// Unit Switching Logic
+const unitIndex = ref(0);
+const units = [
+  { label: 'days', value: 'days' },
+  { label: 'months', value: 'months' },
+  { label: 'years', value: 'years' },
+  { label: 'hours', value: 'hours' },
+];
+
+const currentUnitLabel = computed(() => units[unitIndex.value].label);
+const currentUnitValue = computed(() => {
+  if (!daysTogetherCount.value) return '0';
+  // Simplified for demo
+  return daysTogetherCount.value; 
+});
+
+const cycleUnit = () => {
+  unitIndex.value = (unitIndex.value + 1) % units.length;
+};
+
+// Next Holiday Logic
+const nextHoliday = computed(() => {
+  if (!events.value || events.value.length === 0) return null;
+  
+  const now = new Date();
+  const futureEvents = events.value
+    .filter(e => e.type === 'holiday' && e.date?.toDate() >= now)
+    .sort((a, b) => a.date?.toDate() - b.date?.toDate());
+    
+  return futureEvents.length > 0 ? futureEvents[0] : null;
+});
+
+
+// Music Player State
+const showMusicModal = ref(false);
 
 const showInviteModal = ref(false);
 const showEditProfileModal = ref(false);
@@ -219,16 +309,17 @@ const editForm = ref({
 const pendingInvitation = ref(null);
 const uploadingPartner1 = ref(false);
 const uploadingPartner2 = ref(false);
-let unsubscribeCouple = null;
 let unsubscribeEvents = null;
 
 onMounted(async () => {
   if (user.value) {
-    await getCoupleData(user.value.uid);
+    // coupleData is managed globally in App.vue, but we ensure it's loaded here too
+    if (!coupleData.value) {
+      await getCoupleData(user.value.uid);
+    }
     
-    // Set up real-time sync
+    // Set up real-time sync for Events only (App.vue handles CoupleData)
     if (coupleData.value?.id) {
-      unsubscribeCouple = subscribeToCoupleData(coupleData.value.id);
       unsubscribeEvents = subscribeToEvents(coupleData.value.id);
       
       // Auto-create holiday events if they don't exist
@@ -247,7 +338,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   // Clean up subscriptions
-  if (unsubscribeCouple) unsubscribeCouple();
   if (unsubscribeEvents) unsubscribeEvents();
 });
 

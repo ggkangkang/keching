@@ -190,28 +190,6 @@
       @open-menu="showMusicModal = true"
     />
 
-    <!-- Days Together Card with Swappable Units -->
-    <div class="days-card fade-in-up" @click="cycleUnit">
-      <div class="days-content">
-        <span class="days-count gradient-text">{{ currentUnitValue }}</span>
-        <span class="days-label">{{ currentUnitLabel }} together</span>
-      </div>
-      <div class="swap-hint">
-        <span class="swap-icon">↻</span>
-        Tap to swap unit
-      </div>
-    </div>
-
-    <!-- Next Holiday Card -->
-    <div v-if="nextHoliday" class="next-holiday-card fade-in-up delay-1">
-      <div class="holiday-icon">{{ nextHoliday.emoji }}</div>
-      <div class="holiday-info">
-        <span class="holiday-label">Up Next</span>
-        <span class="holiday-name">{{ nextHoliday.title }}</span>
-        <span class="holiday-date">{{ formatDate(nextHoliday.date) }}</span>
-      </div>
-    </div>
-
     <!-- Invitation Card -->
     <div v-if="!coupleData?.partner2Name" class="invite-card fade-in-up delay-2">
       <h2>Invite Partner</h2>

@@ -89,6 +89,20 @@ export function useAudioPlayer() {
         });
     };
 
+    // Set audio source without playing (for background sync, iOS-friendly)
+    const setSource = (url) => {
+        if (!audioRef.value || !url) return;
+
+        const isDifferentTrack = currentUrl.value !== url;
+
+        if (isDifferentTrack) {
+            console.log('Setting audio source (no autoplay):', url);
+            audioRef.value.src = url;
+            currentUrl.value = url;
+            audioRef.value.load();
+        }
+    };
+
     return {
         audioRef,
         isPlaying,
@@ -97,6 +111,7 @@ export function useAudioPlayer() {
         play,
         pause,
         setTrack,
+        setSource,
         setupAudioListeners
     };
 }

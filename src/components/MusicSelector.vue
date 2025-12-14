@@ -159,12 +159,17 @@ const handleFileUpload = async (event) => {
 const setBGM = async (track) => {
   // If clicking currently playing track, just toggle
   if (props.currentBgmUrl === track.url) {
-    togglePlay();
+    await togglePlay();
   } else {
-    // Optimistically play the track immediately
-    setTrack(track.url);
-    // Set new BGM (Firestore update will trigger App watcher to play, setTrack handles consistency)
-    await setCoupleBGM(coupleData.value.id, track);
+    // For iOS: We need to call play() SYNCHRONOUSLY in the click handler
+    // First, set the track and play immediately (user interaction context)
+    try {
+      await setTrack(track.url);
+      // Then update Firestore (this can happen after)
+      await setCoupleBGM(coupleData.value.id, track);
+    } catch (e) {
+      console.error('Failed to set BGM:', e);
+    }
   }
 };
 

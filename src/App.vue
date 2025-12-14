@@ -46,7 +46,7 @@ const router = useRouter();
 const route = useRoute();
 const { isAuthenticated, user } = useAuth();
 const { coupleData, getCoupleData, subscribeToCoupleData } = useCoupleData();
-const { audioRef, setTrack, setupAudioListeners } = useAudioPlayer();
+const { audioRef, setTrack, setSource, setupAudioListeners } = useAudioPlayer();
 
 const isLoginPage = computed(() => route.path === '/login');
 
@@ -75,10 +75,10 @@ watch(() => user.value, async (newUser) => {
   }
 }, { immediate: true });
 
-// Sync BGM with Audio Player
+// Sync BGM with Audio Player (load source only, don't autoplay for iOS)
 watch(() => coupleData.value?.bgmUrl, (newUrl) => {
   if (newUrl) {
-    setTrack(newUrl);
+    setSource(newUrl); // Use setSource instead of setTrack to avoid autoplay
   }
 });
 

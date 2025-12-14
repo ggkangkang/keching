@@ -2,7 +2,13 @@
   <div id="app">
     <!-- Global Audio Player -->
     <!-- Global Audio Player (using visibility:hidden to ensure mobile browsers don't optimize it out like display:none might) -->
-    <audio ref="audioRef" loop style="position: absolute; bottom: 0; opacity: 0; pointer-events: none; width: 1px; height: 1px;"></audio>
+    <audio 
+      ref="audioRef" 
+      loop 
+      preload="metadata"
+      crossorigin="anonymous"
+      style="position: absolute; bottom: 0; opacity: 0; pointer-events: none; width: 1px; height: 1px;"
+    ></audio>
 
     <nav v-if="isAuthenticated && !isLoginPage" class="main-nav">
       <div class="nav-container container">

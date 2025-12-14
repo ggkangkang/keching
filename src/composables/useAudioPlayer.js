@@ -72,20 +72,57 @@ export function useAudioPlayer() {
 
         // Sync state when audio actually starts playing
         audioRef.value.addEventListener('play', () => {
-            console.log('Audio play event fired');
+            console.log('✅ Audio play event fired');
             isPlaying.value = true;
         });
 
         // Sync state when audio pauses
         audioRef.value.addEventListener('pause', () => {
-            console.log('Audio pause event fired');
+            console.log('⏸️ Audio pause event fired');
             isPlaying.value = false;
         });
 
         // Sync state when audio ends
         audioRef.value.addEventListener('ended', () => {
-            console.log('Audio ended event fired');
+            console.log('🏁 Audio ended event fired');
             isPlaying.value = false;
+        });
+
+        // Listen for errors
+        audioRef.value.addEventListener('error', (e) => {
+            console.error('❌ Audio error:', e);
+            console.error('Error code:', audioRef.value.error?.code);
+            console.error('Error message:', audioRef.value.error?.message);
+            isPlaying.value = false;
+        });
+
+        // Listen for loading events
+        audioRef.value.addEventListener('loadstart', () => {
+            console.log('📥 Audio loading started');
+        });
+
+        audioRef.value.addEventListener('loadedmetadata', () => {
+            console.log('📊 Audio metadata loaded, duration:', audioRef.value.duration);
+        });
+
+        audioRef.value.addEventListener('loadeddata', () => {
+            console.log('📦 Audio data loaded');
+        });
+
+        audioRef.value.addEventListener('canplay', () => {
+            console.log('▶️ Audio can play');
+        });
+
+        audioRef.value.addEventListener('canplaythrough', () => {
+            console.log('▶️▶️ Audio can play through');
+        });
+
+        audioRef.value.addEventListener('stalled', () => {
+            console.warn('⚠️ Audio stalled');
+        });
+
+        audioRef.value.addEventListener('waiting', () => {
+            console.warn('⏳ Audio waiting for data');
         });
     };
 
